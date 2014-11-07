@@ -300,19 +300,7 @@ public class PublisherSampler extends BaseMQTTSampler implements ThreadListener,
 
 	}
 
-	@Override
-	public void threadStarted() {
-		logThreadStart();
-
-		if (producer == null) {
-
-			try {
-				producer = new MqttPublisher();
-			} catch (Exception e) {
-				log.warn(e.getLocalizedMessage(), e);
-			}
-		}
-
+	public void initContext() {
 		String host = getProviderUrl();
 		String list_topic = getDestination();
 		String aggregate = "" + getIterationCount();
@@ -416,6 +404,22 @@ public class PublisherSampler extends BaseMQTTSampler implements ThreadListener,
 		}
 		
 		this.context = new JavaSamplerContext(parameters);
+	}
+	
+	@Override
+	public void threadStarted() {
+		logThreadStart();
+
+		if (producer == null) {
+
+			try {
+				producer = new MqttPublisher();
+			} catch (Exception e) {
+				log.warn(e.getLocalizedMessage(), e);
+			}
+		}
+
+		initContext();
 		this.producer.setupTest(this.context);
 	}
 
@@ -442,7 +446,7 @@ public class PublisherSampler extends BaseMQTTSampler implements ThreadListener,
 
 	@Override
 	public SampleResult sample() {
-
+		initContext();
 		return this.producer.runTest(context);
 	}
 
