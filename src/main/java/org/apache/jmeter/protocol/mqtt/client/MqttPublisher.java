@@ -45,6 +45,8 @@ import org.apache.jmeter.threads.JMeterContextService;
 import org.fusesource.mqtt.client.FutureConnection;
 import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.QoS;
+import org.fusesource.mqtt.client.Topic;
+import org.fusesource.mqtt.client.Message;
 
 
 public class MqttPublisher extends AbstractJavaSamplerClient implements
@@ -75,8 +77,11 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 		if("FALSE".equals(context.getParameter("PER_TOPIC"))){			
 			if("TRUE".equals(context.getParameter("AUTH"))){			
 				setupTest(host,clientId,context.getParameter("USER"),context.getParameter("PASSWORD"),1);		
-				}
-				else{	setupTest(host, clientId,1);}		
+			} else {
+				String topics= context.getParameter("TOPIC");
+				String[] topicArray = topics.split("\\s*,\\s*");
+				setupTest(host, clientId, 1, topicArray);
+			}		
 
 		}
 		else if("TRUE".equals(context.getParameter("PER_TOPIC"))){
@@ -88,21 +93,22 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 			if("TRUE".equals(context.getParameter("AUTH"))){			
 				setupTest(host,clientId,context.getParameter("USER"),context.getParameter("PASSWORD"),size);		
 				}
-				else {	setupTest(host, clientId,size);}
+				else {	setupTest(host, clientId, size, topicArray);}
 		    }
 			}
 
-	public void setupTest(String host, String clientId, int size) {
+	public void setupTest(String host, String clientId, int size, String[] topics) {
 		try {
 			JMeterContext jmcx = JMeterContextService.getContext();
 			this.connectionArray= new FutureConnection[size];
 			if(size==1){
 				this.connectionArray[0]= createConnection(host,clientId+jmcx.getThreadNum());
 				this.connectionArray[0].connect().await();
-				this.getLogger().info("NUMBER CONNECTION: "+PublisherSampler.numberOfConnection.getAndIncrement());
-			}
-			else 
-			{				
+				Topic[] Tp = new Topic[1];
+				Tp[0] = new Topic(topics[0], QoS.AT_LEAST_ONCE);
+				this.connectionArray[0].subscribe(Tp).await();		
+				this.getLogger().info("※NUMBER CONNECTION: "+PublisherSampler.numberOfConnection.getAndIncrement());
+			} else {				
 				for(int i = 0;i< size;i++){
 					this.connectionArray[i]= createConnection(host,clientId+jmcx.getThreadNum()+i);
 					this.connectionArray[i].connect().await();
@@ -201,20 +207,26 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 					context.getParameter("STRATEGY"),
 					context.getParameter("PER_TOPIC"));
 									
-		} else if ("TEXT".equals(context.getParameter("TYPE_MESSAGE"))) {
-			produce(context.getParameter("MESSAGE"),
-					context.getParameter("TOPIC"),
-					Integer.parseInt(context.getParameter("AGGREGATE")),
-					context.getParameter("QOS"),
-					context.getParameter("RETAINED"),
-					context.getParameter("TIME_STAMP"),
-					context.getParameter("NUMBER_SEQUENCE"),					
-					context.getParameter("TYPE_VALUE"),
-					context.getParameter("FORMAT"),
-					context.getParameter("CHARSET"),
-					context.getParameter("LIST_TOPIC"),
-					context.getParameter("STRATEGY"),
-					context.getParameter("PER_TOPIC"));
+		} else if ("TEXT".equals(context.getParameter("TYPE_MESSAGE")) || "BYTES".equals(context.getParameter("TYPE_MESSAGE"))) {
+			// 
+			String[] messageArray= context.getParameter("MESSAGE").split("\\s*#\\s*");
+			int length = messageArray.length;
+			for (int i = 0; i < length; ++i) {
+				this.getLogger().info("※Publish ... [" + i + "]: topic=" + context.getParameter("TOPIC") + " message=" + messageArray[i]);
+				produce(messageArray[i],
+						context.getParameter("TOPIC"),
+						Integer.parseInt(context.getParameter("AGGREGATE")),
+						context.getParameter("QOS"),
+						context.getParameter("RETAINED"),
+						context.getParameter("TIME_STAMP"),
+						context.getParameter("NUMBER_SEQUENCE"),					
+						context.getParameter("TYPE_VALUE"),
+						context.getParameter("FORMAT"),
+						context.getParameter("CHARSET"),
+						context.getParameter("LIST_TOPIC"),
+						context.getParameter("STRATEGY"),
+						context.getParameter("PER_TOPIC"));
+			}
 		} else if("BYTE_ARRAY".equals(context.getParameter("TYPE_MESSAGE"))){
 			produceBigVolume(
 					context.getParameter("TOPIC"),
@@ -325,6 +337,12 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 					byte[] payload = createPayload(message, useTimeStamp, useNumberSeq, type_value,format, charset);	
 					this.connectionArray[0].publish(topic,payload,quality,retained).await();
 					total.incrementAndGet();
+					this.getLogger().info("※Published: topic=" + topic + " message=" + message);
+					
+					// receive message
+					Message msg = this.connectionArray[0].receive().await();
+					this.getLogger().info("※Received: topic= " + msg.getTopic() + " message=" + msg.getPayload());
+					msg.ack();
 				}
 			}
 			else if("TRUE".equals(isListTopic)){
@@ -478,7 +496,7 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 		if (MQTTPublisherGui.FLOAT.equals(type_value)) flags|=0x08;
 		if (MQTTPublisherGui.DOUBLE.equals(type_value)) flags|=0x04;
 		if (MQTTPublisherGui.STRING.equals(type_value)) flags|=0x02;
-		if(!"TEXT".equals(type_value)){
+		if(!"TEXT".equals(type_value) && !"BYTES".equals(type_value)){
 			d.writeByte(flags); 
 		}		
 // TimeStamp
@@ -504,7 +522,12 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
   			d.write(message.getBytes());  			
   		} else if ("TEXT".equals(type_value)) {
   			d.write(message.getBytes());
-  		}   
+  		} else if ("BYTES".equals(type_value)) {
+  			String[] splited = message.split(",");
+  			for(int i = 0; i < splited.length; i++){
+  				d.writeByte(Integer.parseInt(splited[i]));
+  			}
+  		}
   	      
 // Format: Encoding  	   
   	   if(MQTTPublisherGui.BINARY.equals(format)){

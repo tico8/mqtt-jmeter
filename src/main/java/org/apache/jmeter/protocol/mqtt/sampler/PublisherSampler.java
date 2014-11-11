@@ -347,6 +347,11 @@ public class PublisherSampler extends BaseMQTTSampler implements ThreadListener,
 			parameters.addArgument("MESSAGE", getTextMessage());
 			parameters.addArgument("TYPE_MESSAGE", "TEXT");
 			parameters.addArgument("TYPE_VALUE", "TEXT");
+		} else if (this.getMessageChoice().equals(MQTTPublisherGui.TEXT_BYTES)) {
+
+			parameters.addArgument("MESSAGE", getTextMessage());
+			parameters.addArgument("TYPE_MESSAGE", "BYTES");
+			parameters.addArgument("TYPE_VALUE", "BYTES");
 		} else if (this.getMessageChoice().equals(MQTTPublisherGui.FIXED_VALUE)) {
 
 			parameters.addArgument("MESSAGE", getFIXED_VALUE());

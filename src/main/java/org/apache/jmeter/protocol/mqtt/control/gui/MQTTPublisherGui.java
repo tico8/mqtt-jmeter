@@ -61,6 +61,8 @@ public class MQTTPublisherGui extends AbstractSamplerGui implements
 	private static final String USE_TEXT_RSC = "mqtt_use_text"; //$NON-NLS-1$
 	/** Create a TextMessage */
 	public static final String TEXT_MSG_RSC = "mqtt_text_message"; //$NON-NLS-1$
+	/** Create a bytes message */
+	public static final String TEXT_BYTES = "mqtt_bytes"; //$NON-NLS-1$
 	/** Create a big volume message */
 	public static final String BIG_VOLUME = "mqtt_big_volume"; //$NON-NLS-1$
 	/** Create a MapMessage */
@@ -100,7 +102,7 @@ public class MQTTPublisherGui extends AbstractSamplerGui implements
 	// Button group resources
 	private static final String[] DEST_SETUP_ITEMS = { DEST_SETUP_STATIC,DEST_SETUP_DYNAMIC };
 	private final JLabeledRadioI18N destSetup = new JLabeledRadioI18N("mqtt_dest_setup", DEST_SETUP_ITEMS, DEST_SETUP_STATIC); // $NON-NLS-1$
-	private static final String[] MSGTYPES_ITEMS = { TEXT_MSG_RSC,GENERATED_VALUE,FIXED_VALUE,BIG_VOLUME };
+	private static final String[] MSGTYPES_ITEMS = { TEXT_BYTES,TEXT_MSG_RSC,GENERATED_VALUE,FIXED_VALUE,BIG_VOLUME };
 	private static final String[] TOPIC_CHOICES={ROUND_ROBIN,RANDOM};
 	private static final String[] MSGFORMAT_ITEMS = {NO_ENCODING,BINARY,BASE64,BINHEX,PLAIN_TEXT};
 	private static final String[] VALTYPES_ITEMS = { INT,LONG,FLOAT,DOUBLE};
@@ -412,8 +414,19 @@ public class MQTTPublisherGui extends AbstractSamplerGui implements
 			this.seed.setVisible(false);
 			this.textArea.setVisible(true);
 			this.textPanel.setVisible(true);
-			this.sizeArray.setVisible(false);													}
-		else if(GENERATED_VALUE.equals(command)) {
+			this.sizeArray.setVisible(false);
+		} else if(TEXT_BYTES.equals(command)){			
+			this.typeGeneratedValue.setVisible(false);
+			this.typeFixedValue.setVisible(false);
+			this.max.setVisible(false);
+			this.min.setVisible(false);
+			this.value.setVisible(false);
+			this.typeRandom.setVisible(false);
+			this.seed.setVisible(false);
+			this.textArea.setVisible(true);
+			this.textPanel.setVisible(true);
+			this.sizeArray.setVisible(false);		
+		} else if(GENERATED_VALUE.equals(command)) {
 			this.typeFixedValue.setVisible(false);
 			this.value.setVisible(false);
 			this.textArea.setVisible(false);
