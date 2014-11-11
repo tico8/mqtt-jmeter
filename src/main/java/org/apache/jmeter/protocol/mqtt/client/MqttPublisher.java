@@ -104,9 +104,6 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 			if(size==1){
 				this.connectionArray[0]= createConnection(host,clientId+jmcx.getThreadNum());
 				this.connectionArray[0].connect().await();
-				Topic[] Tp = new Topic[1];
-				Tp[0] = new Topic(topics[0], QoS.AT_LEAST_ONCE);
-				this.connectionArray[0].subscribe(Tp).await();		
 				this.getLogger().info("※NUMBER CONNECTION: "+PublisherSampler.numberOfConnection.getAndIncrement());
 			} else {				
 				for(int i = 0;i< size;i++){
@@ -208,7 +205,12 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 					context.getParameter("PER_TOPIC"));
 									
 		} else if ("TEXT".equals(context.getParameter("TYPE_MESSAGE")) || "BYTES".equals(context.getParameter("TYPE_MESSAGE"))) {
-			// 
+			// subscribe
+			Topic[] Tp = new Topic[1];
+			Tp[0] = new Topic(context.getParameter("TOPIC"), QoS.AT_LEAST_ONCE);
+			this.connectionArray[0].subscribe(Tp).await();
+			this.getLogger().info("※Subscribe ... : topic=" + context.getParameter("TOPIC"));
+			// publish
 			String[] messageArray= context.getParameter("MESSAGE").split("\\s*#\\s*");
 			int length = messageArray.length;
 			for (int i = 0; i < length; ++i) {
@@ -332,7 +334,7 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 			if ("TRUE".equals(isRetained))
 				retained = true;
 			// List topic
-			if("FALSE".equals(isListTopic)){		
+			if("FALSE".equals(isListTopic)){
 				for (int i = 0; i < aggregate; ++i) {
 					byte[] payload = createPayload(message, useTimeStamp, useNumberSeq, type_value,format, charset);	
 					this.connectionArray[0].publish(topic,payload,quality,retained).await();
@@ -340,9 +342,9 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 					this.getLogger().info("※Published: topic=" + topic + " message=" + message);
 					
 					// receive message
-					Message msg = this.connectionArray[0].receive().await();
-					this.getLogger().info("※Received: topic= " + msg.getTopic() + " message=" + msg.getPayload());
-					msg.ack();
+//					Message msg = this.connectionArray[0].receive().await();
+//					this.getLogger().info("※Received: topic= " + msg.getTopic() + " message=" + msg.getPayload());
+//					msg.ack();
 				}
 			}
 			else if("TRUE".equals(isListTopic)){
