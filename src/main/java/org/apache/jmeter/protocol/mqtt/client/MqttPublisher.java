@@ -104,7 +104,7 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 			if(size==1){
 				this.connectionArray[0]= createConnection(host,clientId+jmcx.getThreadNum());
 				this.connectionArray[0].connect().await();
-				this.getLogger().info("※NUMBER CONNECTION: "+PublisherSampler.numberOfConnection.getAndIncrement());
+				this.getLogger().info("*NUMBER CONNECTION: "+PublisherSampler.numberOfConnection.getAndIncrement());
 			} else {				
 				for(int i = 0;i< size;i++){
 					this.connectionArray[i]= createConnection(host,clientId+jmcx.getThreadNum()+i);
@@ -209,12 +209,12 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 			Topic[] Tp = new Topic[1];
 			Tp[0] = new Topic(context.getParameter("TOPIC"), QoS.AT_LEAST_ONCE);
 			this.connectionArray[0].subscribe(Tp).await();
-			this.getLogger().info("※Subscribe ... : topic=" + context.getParameter("TOPIC"));
+			this.getLogger().info("*Subscribe ... : topic=" + context.getParameter("TOPIC"));
 			// publish
 			String[] messageArray= context.getParameter("MESSAGE").split("\\s*#\\s*");
 			int length = messageArray.length;
 			for (int i = 0; i < length; ++i) {
-				this.getLogger().info("※Publish ... [" + i + "]: topic=" + context.getParameter("TOPIC") + " message=" + messageArray[i]);
+				this.getLogger().info("*Publish ... [" + i + "]: topic=" + context.getParameter("TOPIC") + " message=" + messageArray[i]);
 				produce(messageArray[i],
 						context.getParameter("TOPIC"),
 						Integer.parseInt(context.getParameter("AGGREGATE")),
@@ -339,11 +339,11 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 					byte[] payload = createPayload(message, useTimeStamp, useNumberSeq, type_value,format, charset);	
 					this.connectionArray[0].publish(topic,payload,quality,retained).await();
 					total.incrementAndGet();
-					this.getLogger().info("※Published: topic=" + topic + " message=" + message);
+					this.getLogger().info("*Published: topic=" + topic + " message=" + message);
 					
 					// receive message
 //					Message msg = this.connectionArray[0].receive().await();
-//					this.getLogger().info("※Received: topic= " + msg.getTopic() + " message=" + msg.getPayload());
+//					this.getLogger().info("*Received: topic= " + msg.getTopic() + " message=" + msg.getPayload());
 //					msg.ack();
 				}
 			}
