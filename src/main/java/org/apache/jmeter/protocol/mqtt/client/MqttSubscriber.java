@@ -247,6 +247,7 @@ public class MqttSubscriber extends AbstractJavaSamplerClient implements
 	public SampleResult runTest(JavaSamplerContext context) {
 		SampleResult result = new SampleResult();
 		try {
+			result.setSampleLabel(context.getParameter("SAMPLER_NAME"));
 			result.sampleStart(); // start stopwatch
 			Thread.sleep(Long.parseLong(context.getParameter("TIMEOUT")));
 			result.sampleEnd(); // stop stopwatch

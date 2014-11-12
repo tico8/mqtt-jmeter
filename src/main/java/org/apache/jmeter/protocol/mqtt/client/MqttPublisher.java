@@ -450,7 +450,7 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 		SampleResult result = new SampleResult();
 
 		try {
-			
+			result.setSampleLabel(context.getParameter("SAMPLER_NAME"));
 			result.sampleStart(); // start stopwatch
 			produce(context);
 			result.sampleEnd(); // stop stopwatch
