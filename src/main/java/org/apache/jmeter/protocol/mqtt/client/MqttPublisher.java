@@ -205,30 +205,21 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 					context.getParameter("PER_TOPIC"));
 									
 		} else if ("TEXT".equals(context.getParameter("TYPE_MESSAGE")) || "BYTES".equals(context.getParameter("TYPE_MESSAGE"))) {
-			// subscribe
-			Topic[] Tp = new Topic[1];
-			Tp[0] = new Topic(context.getParameter("TOPIC"), QoS.AT_LEAST_ONCE);
-			this.connectionArray[0].subscribe(Tp).await();
-			this.getLogger().info("*Subscribe ... : topic=" + context.getParameter("TOPIC"));
-			// publish
-			String[] messageArray= context.getParameter("MESSAGE").split("\\s*#\\s*");
-			int length = messageArray.length;
-			for (int i = 0; i < length; ++i) {
-				this.getLogger().info("*Publish ... [" + i + "]: topic=" + context.getParameter("TOPIC") + " message=" + messageArray[i]);
-				produce(messageArray[i],
-						context.getParameter("TOPIC"),
-						Integer.parseInt(context.getParameter("AGGREGATE")),
-						context.getParameter("QOS"),
-						context.getParameter("RETAINED"),
-						context.getParameter("TIME_STAMP"),
-						context.getParameter("NUMBER_SEQUENCE"),					
-						context.getParameter("TYPE_VALUE"),
-						context.getParameter("FORMAT"),
-						context.getParameter("CHARSET"),
-						context.getParameter("LIST_TOPIC"),
-						context.getParameter("STRATEGY"),
-						context.getParameter("PER_TOPIC"));
-			}
+			
+			produce(context.getParameter("MESSAGE"),
+					context.getParameter("TOPIC"),
+					Integer.parseInt(context.getParameter("AGGREGATE")),
+					context.getParameter("QOS"),
+					context.getParameter("RETAINED"),
+					context.getParameter("TIME_STAMP"),
+					context.getParameter("NUMBER_SEQUENCE"),			
+					context.getParameter("TYPE_VALUE"),
+					context.getParameter("FORMAT"),
+					context.getParameter("CHARSET"),
+					context.getParameter("LIST_TOPIC"),
+					context.getParameter("STRATEGY"),
+					context.getParameter("PER_TOPIC"));
+			
 		} else if("BYTE_ARRAY".equals(context.getParameter("TYPE_MESSAGE"))){
 			produceBigVolume(
 					context.getParameter("TOPIC"),
@@ -335,16 +326,37 @@ public class MqttPublisher extends AbstractJavaSamplerClient implements
 				retained = true;
 			// List topic
 			if("FALSE".equals(isListTopic)){
+				Topic[] Tp = new Topic[1];
+				Tp[0] = new Topic(topic, quality);
+				this.connectionArray[0].subscribe(Tp).await();
+				this.getLogger().info("*Subscribe ... : topic=" + topic);
 				for (int i = 0; i < aggregate; ++i) {
-					byte[] payload = createPayload(message, useTimeStamp, useNumberSeq, type_value,format, charset);	
-					this.connectionArray[0].publish(topic,payload,quality,retained).await();
-					total.incrementAndGet();
-					this.getLogger().info("*Published: topic=" + topic + " message=" + message);
+					String[] messageArray= message.split("\\s*#\\s*");
+					int length = messageArray.length;
+					for (int j = 0; j < length; ++j) {
+						this.getLogger().info("*Publish ... [" + j + "]: topic=" + topic + " message=" + messageArray[j]);
+						byte[] payload = createPayload(messageArray[j], useTimeStamp, useNumberSeq, type_value,format, charset);	
+						this.connectionArray[0].publish(topic,payload,quality,retained).await();
+						total.incrementAndGet();
+						this.getLogger().info("*Published[" + j + "]: topic=" + topic + " message=" + messageArray[j]);
+						
+						// receive message
+	//					Message msg = this.connectionArray[0].receive().await();
+	//					this.getLogger().info("*Received: topic= " + msg.getTopic() + " message=" + msg.getPayload());
+	//					msg.ack();
+					}
 					
-					// receive message
-//					Message msg = this.connectionArray[0].receive().await();
-//					this.getLogger().info("*Received: topic= " + msg.getTopic() + " message=" + msg.getPayload());
-//					msg.ack();
+					// unsubscribe
+					String[] ts = new String[1];
+					ts[0] = topic;
+					this.getLogger().info("*Unsubscribe ... : topic=" + topic);
+					this.connectionArray[0].unsubscribe(ts).await();;
+					
+					// disconnect
+//					if (this.connectionArray[0] != null)
+//						this.connectionArray[0].disconnect();
+//						this.getLogger().info("*Disconnect ... : topic=" + context.getParameter("TOPIC"));
+//						this.getLogger().info("*NUMBER CONNECTION: "+PublisherSampler.numberOfConnection.getAndDecrement());
 				}
 			}
 			else if("TRUE".equals(isListTopic)){
